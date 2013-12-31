@@ -185,6 +185,37 @@ def test_dummy_gen_engine():
     IOLoop.current().start()
 
 
+def test_dummy_stream():
+    # this test will be test `inspect_object`
+    inspector = TornadoContextInspector()
+    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+
+    def do_async():
+        request = r
+        stream = DummyStream()
+
+        def callback():
+            request.finish()  # don't worry, won't be called
+        stream.read(callback)
+
+    class DummyStream(object):
+        def read(self, callback):
+            self._read_callback = callback
+            IOLoop.current().add_callback(self._data_recieved)
+
+        def _data_recieved(self):
+            try:
+                inspector.inspect_frame(currentframe(1))
+                # print(inspector.__dict__)
+                assert inspector.found_req is r
+                assert len(inspector.async_frames) == 0, 'We doesnt have any async calls'
+            finally:
+                IOLoop.current().stop()
+
+    do_async()
+    IOLoop.current().start()
+
+
 if __name__ == '__main__':
     # This is file is actually a py.test file, but it's runnable py.test
     test_simple()
