@@ -33,3 +33,5 @@ Running tests
 Install `pytest` then run:
 
     $ py.test
+
+[![Build Status](https://travis-ci.org/tahajahangir/tornado-inspector.png?branch=master)](https://travis-ci.org/tahajahangir/tornado-inspector)
