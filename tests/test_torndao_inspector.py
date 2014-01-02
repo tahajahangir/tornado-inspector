@@ -201,9 +201,9 @@ def test_dummy_stream():
     class DummyStream(object):
         def read(self, callback):
             self._read_callback = callback
-            IOLoop.current().add_callback(self._data_recieved)
+            IOLoop.current().add_callback(self._data_received)
 
-        def _data_recieved(self):
+        def _data_received(self):
             try:
                 inspector.inspect_frame(currentframe(1))
                 # print(inspector.__dict__)
