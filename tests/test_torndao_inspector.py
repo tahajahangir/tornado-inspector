@@ -1,11 +1,25 @@
 from __future__ import print_function
 import sys
 
-from tornado import gen
-from tornado.httpserver import HTTPRequest
+from tornado import gen, version_info
 from tornado.ioloop import IOLoop
 
 from tornado_inspector import TornadoContextInspector
+
+
+if version_info > (4, ):
+    from tornado.http1connection import HTTP1ServerConnection
+    from tornado.httpserver import _HTTPRequestContext
+    from tornado.httputil import HTTPServerRequest
+
+    class DummyHttpRequst(HTTPServerRequest):
+        def __init__(self, *args, **kwargs):
+            context = _HTTPRequestContext.__new__(_HTTPRequestContext)
+            context.remote_ip = '127.0.0.1'
+            kwargs['connection'] = HTTP1ServerConnection(None, context=context)
+            super(DummyHttpRequst, self).__init__(*args, **kwargs)
+else:
+    from tornado.httpserver import HTTPRequest as DummyHttpRequst
 
 
 def currentframe(level):
@@ -17,7 +31,7 @@ def currentframe(level):
 
 def test_simple():
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     def handle_req(request):
         try:
@@ -36,7 +50,7 @@ def test_simple():
 def test_simple_gen_engine():
     # in this test, the outer function has the request parameter
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     # noinspection PyUnusedLocal
     def load_file(_file_id, callback):
@@ -64,7 +78,7 @@ def test_simple_gen_engine():
 def test_simple_gen_engine2():
     # in this test, both inner/outer function have the request parameter
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     # noinspection PyUnusedLocal
     def load_file(request, callback):
@@ -91,7 +105,7 @@ def test_simple_gen_engine2():
 def test_simple_gen_engine3():
     # in this test, only inner function has the request parameter
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     # noinspection PyUnusedLocal
     def load_file(request, callback):
@@ -118,7 +132,7 @@ def test_simple_gen_engine3():
 def test_simple_gen_engine_three_level():
     # in this test, only inner function has the request parameter
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     def load_root(callback):
         inspector.inspect_frame(currentframe(1))
@@ -160,7 +174,7 @@ def test_simple_gen_engine_three_level():
 def test_dummy_gen_engine():
     # in this test, we used gen.engine in a way, that one balot version incorrectly prints one async row
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     def load_root(callback):
         IOLoop.current().add_callback(callback)
@@ -188,7 +202,7 @@ def test_dummy_gen_engine():
 def test_dummy_stream():
     # this test will be test `inspect_object`
     inspector = TornadoContextInspector()
-    r = HTTPRequest('GET', '/foo/bar')  # don't name this as request!
+    r = DummyHttpRequst('GET', '/foo/bar')  # don't name this as request!
 
     def do_async():
         request = r

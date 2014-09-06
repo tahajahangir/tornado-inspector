@@ -110,7 +110,8 @@ class TornadoContextInspector(object):
     def inspect_callback(self, callback_f):
         if self.found_req and self.stop_on_request_find:
             return
-        if callback_f.__name__ == 'wrapped' and function_module(callback_f) == 'tornado.stack_context':
+        if callback_f.__name__ in ['wrapped', 'null_wrapper'] and \
+                function_module(callback_f) == 'tornado.stack_context':
             # if this is a context wrapper, continue from wrapped function
             closures = function_closure_dict(callback_f)
             new_callback = closures['fn']  # wrapped function
